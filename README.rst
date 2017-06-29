@@ -20,3 +20,12 @@ The ``system_name_llc`` plugin uses LLDP data gathered by the discovery ramdisk
 to populate the ``switch_info`` field of the ``local_link_connection``
 attribute of ironic ports.  The field is populated with the contents of the
 system name LLDP TLV if it was received by that port.
+
+Usage
+=====
+
+This project is hosted on PyPI, and may be installed via pip:
+
+.. code-block::
+
+   pip install stackhpc-inspector-plugins
