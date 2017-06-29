@@ -1,0 +1,32 @@
+# Compiled files
+*.py[co]
+*.a
+*.o
+*.so
+
+# Packages/installer info
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+var
+sdist
+develop-eggs
+.installed.cfg
+.eggs/
+
+# Other
+*.DS_Store
+.idea
+.testrepository
+.tox
+.venv
+.*.swp
+.coverage
+cover
+AUTHORS
+ChangeLog
+*.sqlite
+*~
