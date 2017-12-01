@@ -29,7 +29,7 @@ class SystemNamePhysnetHook(base_physnet.BasePhysnetHook):
     """Inspector hook to assign ports a physical network based on switch name.
 
     This plugin uses the configuration option [port_physnet]
-    switch_system_name_mapping to map switch names to a physical network. If a
+    switch_sys_name_mapping to map switch names to a physical network. If a
     port has received LLDP data with a switch system name in the mapping, the
     corresponding physical network will be applied to the port.
     """

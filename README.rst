@@ -28,10 +28,10 @@ The ``system_name_physnet`` plugin uses LLDP data gathered by the discovery
 ramdisk to populate the ``physical_network`` field of ironic ports.
 
 The plugin is configured via the option ``[port_physnet]
-switch_system_name_mapping``, which is a comma-separated list of ``<switch
-system name>:<physical network>`` tuples.  If the switch system name LLDP TLV
-received by a port matches an item in the mapping, the corresponding physical
-network will be applied to the port.
+switch_sys_name_mapping``, which is a comma-separated list of ``<switch system
+name>:<physical network>`` tuples.  If the switch system name LLDP TLV received
+by a port matches an item in the mapping, the corresponding physical network
+will be applied to the port.
 
 Usage
 =====
