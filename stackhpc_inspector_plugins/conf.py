@@ -19,6 +19,10 @@ from ironic_inspector.common.i18n import _
 
 
 PORT_PHYSNET_OPTS = [
+    cfg.StrOpt(
+        'ib_physnet',
+        help=_('Name of the physical network that the Infiniband network is '
+               'on')),
     cfg.ListOpt(
         'switch_sys_name_mapping',
         default=[],
