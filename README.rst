@@ -13,6 +13,15 @@ service, ironic inspector.
 Plugins
 =======
 
+PXE Physical Network
+--------------------
+
+The ``pxe_physnet`` plugin populates the ``physical_network`` field of the
+ironic port that PXE booted the inspection ramdisk.
+
+The plugin is configured via the option ``[port_physnet] pxe_physnet``, which
+is the name of the physical network to apply.
+
 System Name Local Link Connection
 ---------------------------------
 
