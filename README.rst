@@ -13,6 +13,25 @@ service, ironic inspector.
 Plugins
 =======
 
+LAG Physical Network
+--------------------
+
+The ``lag_physnet`` plugin populates the ``physical_network`` field of
+ironic ports that are members of a Link Aggregate Group (LAG), as determined by
+LLDP data gathered by the discovery ramdisk.
+
+The plugin is configured via the option ``[port_physnet] lag_physnet``, which
+is the name of the physical network to apply.
+
+PXE Physical Network
+--------------------
+
+The ``pxe_physnet`` plugin populates the ``physical_network`` field of the
+ironic port that PXE booted the inspection ramdisk.
+
+The plugin is configured via the option ``[port_physnet] pxe_physnet``, which
+is the name of the physical network to apply.
+
 System Name Local Link Connection
 ---------------------------------
 

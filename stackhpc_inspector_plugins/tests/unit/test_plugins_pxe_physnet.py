@@ -19,14 +19,14 @@ from ironic_inspector import node_cache
 from ironic_inspector.test import base as test_base
 from oslo_config import cfg
 
-from stackhpc_inspector_plugins.plugins import system_name_physnet
+from stackhpc_inspector_plugins.plugins import pxe_physnet
 
 
-class TestSystemNamePhysnetHook(test_base.NodeTest):
+class TestPXEPhysnetHook(test_base.NodeTest):
 
     def setUp(self):
-        super(TestSystemNamePhysnetHook, self).setUp()
-        self.hook = system_name_physnet.SystemNamePhysnetHook()
+        super(TestPXEPhysnetHook, self).setUp()
+        self.hook = pxe_physnet.PXEPhysnetHook()
         self.data = {
             'inventory': {
                 'interfaces': [{
@@ -39,10 +39,8 @@ class TestSystemNamePhysnetHook(test_base.NodeTest):
             },
             'all_interfaces': {
                 'em1': {
-                    'lldp_processed': {
-                        'switch_system_name': 'switch-1',
-                    }
-                }
+                    'pxe': True,
+                },
             }
         }
 
@@ -52,39 +50,17 @@ class TestSystemNamePhysnetHook(test_base.NodeTest):
         self.node_info = node_cache.NodeInfo(uuid=self.uuid, started_at=0,
                                              node=self.node, ports=ports)
 
-    def test_expected_data(self):
-        sys_name_mapping = 'switch-1:physnet1,switch-2:physnet2'
-        cfg.CONF.set_override('switch_sys_name_mapping', sys_name_mapping,
+    def test_expected_data_pxe(self):
+        cfg.CONF.set_override('pxe_physnet', 'physnet1',
                               group='port_physnet')
         port = self.node_info.ports().values()[0]
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertEqual(physnet, 'physnet1')
 
-    def test_no_lldp_processed(self):
-        del self.data['all_interfaces']['em1']['lldp_processed']
-        port = self.node_info.ports().values()[0]
-        physnet = self.hook.get_physnet(port, 'em1', self.data)
-        self.assertIsNone(physnet)
-
-    def test_no_lldp_system_name(self):
-        proc_data = self.data['all_interfaces']['em1']
-        del proc_data['lldp_processed']['switch_system_name']
-        port = self.node_info.ports().values()[0]
-        physnet = self.hook.get_physnet(port, 'em1', self.data)
-        self.assertIsNone(physnet)
-
-    def test_no_mapping(self):
-        sys_name_mapping = 'switch-2:physnet2'
-        cfg.CONF.set_override('switch_sys_name_mapping', sys_name_mapping,
+    def test_expected_data_non_pxe(self):
+        cfg.CONF.set_override('pxe_physnet', 'physnet1',
                               group='port_physnet')
+        self.data['all_interfaces']['em1']['pxe'] = False
         port = self.node_info.ports().values()[0]
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertIsNone(physnet)
-
-    def test_invalid_mapping(self):
-        sys_name_mapping = 'switch-2:physnet1,switch-2:physnet2'
-        cfg.CONF.set_override('switch_sys_name_mapping', sys_name_mapping,
-                              group='port_physnet')
-        port = self.node_info.ports().values()[0]
-        self.assertRaises(ValueError,
-                          self.hook.get_physnet, port, 'em1', self.data)

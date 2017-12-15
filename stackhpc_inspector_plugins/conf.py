@@ -19,6 +19,14 @@ from ironic_inspector.common.i18n import _
 
 
 PORT_PHYSNET_OPTS = [
+    cfg.StrOpt(
+        'lag_physnet',
+        help=_('Name of the physical network that ports with link aggregates '
+               'configured are on')),
+    cfg.StrOpt(
+        'pxe_physnet',
+        help=_('Name of the physical network that the PXE network is '
+               'on')),
     cfg.ListOpt(
         'switch_sys_name_mapping',
         default=[],

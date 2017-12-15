@@ -19,14 +19,14 @@ from ironic_inspector import node_cache
 from ironic_inspector.test import base as test_base
 from oslo_config import cfg
 
-from stackhpc_inspector_plugins.plugins import system_name_physnet
+from stackhpc_inspector_plugins.plugins import lag_physnet
 
 
-class TestSystemNamePhysnetHook(test_base.NodeTest):
+class TestLAGPhysnetHook(test_base.NodeTest):
 
     def setUp(self):
-        super(TestSystemNamePhysnetHook, self).setUp()
-        self.hook = system_name_physnet.SystemNamePhysnetHook()
+        super(TestLAGPhysnetHook, self).setUp()
+        self.hook = lag_physnet.LAGPhysnetHook()
         self.data = {
             'inventory': {
                 'interfaces': [{
@@ -40,7 +40,7 @@ class TestSystemNamePhysnetHook(test_base.NodeTest):
             'all_interfaces': {
                 'em1': {
                     'lldp_processed': {
-                        'switch_system_name': 'switch-1',
+                        'switch_port_link_aggregation_enabled': True,
                     }
                 }
             }
@@ -52,9 +52,8 @@ class TestSystemNamePhysnetHook(test_base.NodeTest):
         self.node_info = node_cache.NodeInfo(uuid=self.uuid, started_at=0,
                                              node=self.node, ports=ports)
 
-    def test_expected_data(self):
-        sys_name_mapping = 'switch-1:physnet1,switch-2:physnet2'
-        cfg.CONF.set_override('switch_sys_name_mapping', sys_name_mapping,
+    def test_expected_data_lag(self):
+        cfg.CONF.set_override('lag_physnet', 'physnet1',
                               group='port_physnet')
         port = self.node_info.ports().values()[0]
         physnet = self.hook.get_physnet(port, 'em1', self.data)
@@ -66,25 +65,17 @@ class TestSystemNamePhysnetHook(test_base.NodeTest):
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertIsNone(physnet)
 
-    def test_no_lldp_system_name(self):
+    def test_no_lldp_lag_enabled(self):
         proc_data = self.data['all_interfaces']['em1']
-        del proc_data['lldp_processed']['switch_system_name']
+        del proc_data['lldp_processed']['switch_port_link_aggregation_enabled']
         port = self.node_info.ports().values()[0]
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertIsNone(physnet)
 
-    def test_no_mapping(self):
-        sys_name_mapping = 'switch-2:physnet2'
-        cfg.CONF.set_override('switch_sys_name_mapping', sys_name_mapping,
-                              group='port_physnet')
+    def test_lldp_lag_disabled(self):
+        proc_data = self.data['all_interfaces']['em1']
+        proc_data['lldp_processed']['switch_port_link_aggregation_enabled'] = (
+            False)
         port = self.node_info.ports().values()[0]
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertIsNone(physnet)
-
-    def test_invalid_mapping(self):
-        sys_name_mapping = 'switch-2:physnet1,switch-2:physnet2'
-        cfg.CONF.set_override('switch_sys_name_mapping', sys_name_mapping,
-                              group='port_physnet')
-        port = self.node_info.ports().values()[0]
-        self.assertRaises(ValueError,
-                          self.hook.get_physnet, port, 'em1', self.data)
