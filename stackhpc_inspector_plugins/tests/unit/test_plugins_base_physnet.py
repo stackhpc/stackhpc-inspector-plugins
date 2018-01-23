@@ -15,6 +15,7 @@
 
 import mock
 
+from ironic_inspector.common import ironic
 from ironic_inspector import node_cache
 from ironic_inspector.test import base as test_base
 from ironic_inspector import utils
@@ -29,6 +30,7 @@ class FakePortPhysnetHook(base_physnet.BasePhysnetHook):
         return
 
 
+@mock.patch.object(ironic, 'get_client')
 class TestBasePortPhysnetHook(test_base.NodeTest):
     hook = FakePortPhysnetHook()
 
@@ -57,7 +59,7 @@ class TestBasePortPhysnetHook(test_base.NodeTest):
 
     @mock.patch.object(node_cache.NodeInfo, 'patch_port')
     @mock.patch.object(FakePortPhysnetHook, 'get_physnet')
-    def test_expected_data(self, mock_get, mock_patch):
+    def test_expected_data(self, mock_get, mock_patch, mock_client):
         patches = [
             {'path': '/physical_network',
              'value': 'physnet2', 'op': 'add'},
@@ -70,36 +72,36 @@ class TestBasePortPhysnetHook(test_base.NodeTest):
 
     @mock.patch.object(node_cache.NodeInfo, 'patch_port')
     @mock.patch.object(FakePortPhysnetHook, 'get_physnet')
-    def test_noop(self, mock_get, mock_patch):
+    def test_noop(self, mock_get, mock_patch, mock_client):
         mock_get.return_value = 'physnet1'
         self.hook.before_update(self.data, self.node_info)
         self.assertFalse(mock_patch.called)
 
     @mock.patch.object(node_cache.NodeInfo, 'patch_port')
-    def test_no_mapping(self, mock_patch):
+    def test_no_mapping(self, mock_patch, mock_client):
         self.hook.physnet = None
         self.hook.before_update(self.data, self.node_info)
         self.assertFalse(mock_patch.called)
 
     @mock.patch.object(node_cache.NodeInfo, 'patch_port')
-    def test_interface_not_in_all_interfaces(self, mock_patch):
+    def test_interface_not_in_all_interfaces(self, mock_patch, mock_client):
         self.data['all_interfaces'] = {}
         self.hook.before_update(self.data, self.node_info)
         self.assertFalse(mock_patch.called)
 
     @mock.patch.object(node_cache.NodeInfo, 'patch_port')
-    def test_interface_not_in_ironic(self, mock_patch):
+    def test_interface_not_in_ironic(self, mock_patch, mock_client):
         self.node_info._ports = {}
         self.hook.before_update(self.data, self.node_info)
         self.assertFalse(mock_patch.called)
 
-    def test_no_inventory(self):
+    def test_no_inventory(self, mock_client):
         del self.data['inventory']
         self.assertRaises(utils.Error, self.hook.before_update,
                           self.data, self.node_info)
 
     @mock.patch.object(node_cache.NodeInfo, 'patch_port')
-    def test_no_overwrite(self, mock_patch):
+    def test_no_overwrite(self, mock_patch, mock_client):
         cfg.CONF.set_override('overwrite_existing', False, group='processing')
         self.hook.before_update(self.data, self.node_info)
         self.assertFalse(mock_patch.called)
