@@ -85,3 +85,6 @@ class TestSystemNamePhysnetHook(test_base.NodeTest):
         sys_name_mapping = 'switch-2:physnet1,switch-2:physnet2'
         cfg.CONF.set_override('switch_sys_name_mapping', sys_name_mapping,
                               group='port_physnet')
+        port = self.node_info.ports().values()[0]
+        self.assertRaises(ValueError,
+                          self.hook.get_physnet, port, 'em1', self.data)
