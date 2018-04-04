@@ -13,6 +13,16 @@ service, ironic inspector.
 Plugins
 =======
 
+Infiniband Physical Network
+---------------------------
+
+The ``ib_physnet`` plugin populates the ``physical_network`` field of ironic
+ports determined to be Infiniband ports. Ports with a ``client-id`` field
+in their ``extra`` attribute are determined to be IB ports.
+
+The plugin is configured via the option ``[port_physnet] ib_physnet``, which is
+the name of the physical network to apply.
+
 System Name Local Link Connection
 ---------------------------------
 
