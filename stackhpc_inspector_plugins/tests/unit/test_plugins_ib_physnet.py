@@ -1,4 +1,4 @@
-# Copyright (c) 2017 StackHPC Ltd.
+# Copyright (c) 2018 StackHPC Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -58,10 +58,18 @@ class TestIBPhysnetHook(test_base.NodeTest):
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertEqual(physnet, 'physnet1')
 
-    def test_expected_data_non_ib(self):
+    def test_expected_data_client_id_is_none(self):
         cfg.CONF.set_override('ib_physnet', 'physnet1',
                               group='port_physnet')
         self.data['all_interfaces']['em1']['client_id'] = None
+        port = self.node_info.ports().values()[0]
+        physnet = self.hook.get_physnet(port, 'em1', self.data)
+        self.assertIsNone(physnet)
+
+    def test_expected_data_no_client_id(self):
+        cfg.CONF.set_override('ib_physnet', 'physnet1',
+                              group='port_physnet')
+        del self.data['all_interfaces']['em1']['client_id']
         port = self.node_info.ports().values()[0]
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertIsNone(physnet)
