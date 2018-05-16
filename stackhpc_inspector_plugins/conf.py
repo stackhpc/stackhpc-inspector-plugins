@@ -24,6 +24,13 @@ PORT_PHYSNET_OPTS = [
         help=_('Name of the physical network that the Infiniband network is '
                'on')),
     cfg.ListOpt(
+        'port_speed_mapping',
+        default=[],
+        help=_('Comma-separated list of '
+               '<port speed>:<physical network> tuples mapping interface '
+               'speeds detected by the extra-hardware collector to a physical '
+               'network to apply to ports with that speed.')),
+    cfg.ListOpt(
         'switch_sys_name_mapping',
         default=[],
         help=_('Comma-separated list of '

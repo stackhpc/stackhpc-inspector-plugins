@@ -43,6 +43,19 @@ name>:<physical network>`` tuples.  If the switch system name LLDP TLV received
 by a port matches an item in the mapping, the corresponding physical network
 will be applied to the port.
 
+Port Speed Physical Network
+---------------------------
+
+The ``port_speed_physnet`` plugin uses the interface speed reported by the
+``extra-hardware`` collector in the discovery ramdisk to populate the
+``physical_network`` field of ironic ports.
+
+The plugin is configured via the option ``[port_physnet]
+port_speed_mapping``, which is a comma-separated list of ``<port speed
+>:<physical network>`` tuples.  If the interface speed reported by
+``extra-hardware`` matches an item in the mapping, the corresponding physical
+network will be applied to the port.
+
 Usage
 =====
 
