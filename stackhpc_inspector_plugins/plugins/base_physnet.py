@@ -58,6 +58,7 @@ class BasePhysnetHook(base.ProcessingHook):
         :param port: The ironic port to patch.
         :returns: A dict to be used as a patch for the port, or None.
         """
+        # Bug is here.
         if (not CONF.processing.overwrite_existing or
                 port.physical_network == physnet):
             return
@@ -67,6 +68,7 @@ class BasePhysnetHook(base.ProcessingHook):
         """Process introspection data and patch port physical network."""
         inventory = utils.get_inventory(introspection_data)
 
+        LOG.info("Plugin: %s", type(self))
         # Use a client with a version set explicitly.
         client = ironic.get_client(api_version=REQUIRED_IRONIC_VERSION)
 
@@ -75,9 +77,14 @@ class BasePhysnetHook(base.ProcessingHook):
                 not hasattr(ironic_ports.values()[0], 'physical_network')):
             # If the ports do not have a physical network field, use our newer
             # versioned client to fetch some that do.
+            LOG.info("Ports don't have physnet. Getting new ones")
             port_list = client.node.list_ports(node_info.uuid, limit=0,
                                                detail=True)
             ironic_ports = {p.address: p for p in port_list}
+        else:
+            LOG.info("Ports have physnet. Using existing")
+
+        LOG.info("Ports: %s", ", ".join(ironic_ports.values()))
 
         for iface in inventory['interfaces']:
             if iface['name'] not in introspection_data['all_interfaces']:
@@ -93,6 +100,7 @@ class BasePhysnetHook(base.ProcessingHook):
                 continue
 
             # Determine the physical network for this port.
+            # Port not touched in here.
             physnet = self.get_physnet(port, iface['name'], introspection_data)
             if physnet is None:
                 LOG.debug("Skipping physical network processing for interface "
@@ -101,6 +109,8 @@ class BasePhysnetHook(base.ProcessingHook):
                           node_info=node_info, data=introspection_data)
                 continue
 
+            # Must have got to here.
+            LOG.info("Getting physnet patch for %s", mac_address)
             patch = self._get_physnet_patch(physnet, port)
             if patch is None:
                 LOG.debug("Skipping physical network processing for interface "
