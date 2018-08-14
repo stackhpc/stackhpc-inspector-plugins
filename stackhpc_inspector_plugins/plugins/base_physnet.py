@@ -84,7 +84,7 @@ class BasePhysnetHook(base.ProcessingHook):
         else:
             LOG.info("Ports have physnet. Using existing")
 
-        LOG.info("Ports: %s", ", ".join(ironic_ports.values()))
+        LOG.info("Ports: %s", ", ".join([repr(p) for p in ironic_ports.values()]))
 
         for iface in inventory['interfaces']:
             if iface['name'] not in introspection_data['all_interfaces']:
