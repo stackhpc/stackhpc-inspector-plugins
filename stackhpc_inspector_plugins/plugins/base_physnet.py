@@ -58,6 +58,7 @@ class BasePhysnetHook(base.ProcessingHook):
         :param port: The ironic port to patch.
         :returns: A dict to be used as a patch for the port, or None.
         """
+        # Bug is here.
         if (not CONF.processing.overwrite_existing or
                 port.physical_network == physnet):
             return
@@ -67,12 +68,14 @@ class BasePhysnetHook(base.ProcessingHook):
         """Process introspection data and patch port physical network."""
         inventory = utils.get_inventory(introspection_data)
 
+        LOG.info("Plugin: %s", type(self))
         # Use a client with a version set explicitly.
         client = ironic.get_client(api_version=REQUIRED_IRONIC_VERSION)
 
         ironic_ports = node_info.ports()
         if (ironic_ports and
-                not hasattr(ironic_ports.values()[0], 'physical_network')):
+                not all(hasattr(port, 'physical_network')
+                        for port in ironic_ports.values())):
             # If the ports do not have a physical network field, use our newer
             # versioned client to fetch some that do.
             port_list = client.node.list_ports(node_info.uuid, limit=0,
@@ -93,6 +96,7 @@ class BasePhysnetHook(base.ProcessingHook):
                 continue
 
             # Determine the physical network for this port.
+            # Port not touched in here.
             physnet = self.get_physnet(port, iface['name'], introspection_data)
             if physnet is None:
                 LOG.debug("Skipping physical network processing for interface "
