@@ -66,7 +66,7 @@ class TestBasePortPhysnetHook(test_base.NodeTest):
         ]
         mock_get.return_value = 'physnet2'
         self.hook.before_update(self.data, self.node_info)
-        port = self.node_info.ports().values()[0]
+        port = list(self.node_info.ports().values())[0]
         mock_get.assert_called_once_with(port, 'em1', self.data)
         self.assertCalledWithPatch(patches, mock_patch)
 

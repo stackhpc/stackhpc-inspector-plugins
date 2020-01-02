@@ -56,20 +56,20 @@ class TestSystemNamePhysnetHook(test_base.NodeTest):
         sys_name_mapping = 'switch-1:physnet1,switch-2:physnet2'
         cfg.CONF.set_override('switch_sys_name_mapping', sys_name_mapping,
                               group='port_physnet')
-        port = self.node_info.ports().values()[0]
+        port = list(self.node_info.ports().values())[0]
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertEqual(physnet, 'physnet1')
 
     def test_no_lldp_processed(self):
         del self.data['all_interfaces']['em1']['lldp_processed']
-        port = self.node_info.ports().values()[0]
+        port = list(self.node_info.ports().values())[0]
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertIsNone(physnet)
 
     def test_no_lldp_system_name(self):
         proc_data = self.data['all_interfaces']['em1']
         del proc_data['lldp_processed']['switch_system_name']
-        port = self.node_info.ports().values()[0]
+        port = list(self.node_info.ports().values())[0]
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertIsNone(physnet)
 
@@ -77,7 +77,7 @@ class TestSystemNamePhysnetHook(test_base.NodeTest):
         sys_name_mapping = 'switch-2:physnet2'
         cfg.CONF.set_override('switch_sys_name_mapping', sys_name_mapping,
                               group='port_physnet')
-        port = self.node_info.ports().values()[0]
+        port = list(self.node_info.ports().values())[0]
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertIsNone(physnet)
 
@@ -85,6 +85,6 @@ class TestSystemNamePhysnetHook(test_base.NodeTest):
         sys_name_mapping = 'switch-2:physnet1,switch-2:physnet2'
         cfg.CONF.set_override('switch_sys_name_mapping', sys_name_mapping,
                               group='port_physnet')
-        port = self.node_info.ports().values()[0]
+        port = list(self.node_info.ports().values())[0]
         self.assertRaises(ValueError,
                           self.hook.get_physnet, port, 'em1', self.data)
