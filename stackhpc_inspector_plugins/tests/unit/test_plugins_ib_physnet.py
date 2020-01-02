@@ -54,7 +54,7 @@ class TestIBPhysnetHook(test_base.NodeTest):
     def test_expected_data_ib(self):
         cfg.CONF.set_override('ib_physnet', 'physnet1',
                               group='port_physnet')
-        port = self.node_info.ports().values()[0]
+        port = list(self.node_info.ports().values())[0]
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertEqual(physnet, 'physnet1')
 
@@ -62,7 +62,7 @@ class TestIBPhysnetHook(test_base.NodeTest):
         cfg.CONF.set_override('ib_physnet', 'physnet1',
                               group='port_physnet')
         self.data['all_interfaces']['em1']['client_id'] = None
-        port = self.node_info.ports().values()[0]
+        port = list(self.node_info.ports().values())[0]
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertIsNone(physnet)
 
@@ -70,6 +70,6 @@ class TestIBPhysnetHook(test_base.NodeTest):
         cfg.CONF.set_override('ib_physnet', 'physnet1',
                               group='port_physnet')
         del self.data['all_interfaces']['em1']['client_id']
-        port = self.node_info.ports().values()[0]
+        port = list(self.node_info.ports().values())[0]
         physnet = self.hook.get_physnet(port, 'em1', self.data)
         self.assertIsNone(physnet)
