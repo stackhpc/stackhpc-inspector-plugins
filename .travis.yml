@@ -21,7 +21,13 @@ matrix:
     # Run python style checks.
     - python: 3.8
       env: TOXENV=pep8
-    # Run python3.8 units tests.
+    # Run python3.6 unit tests.
+    - python: 3.6
+      env: TOXENV=py36
+    # Run python3.7 unit tests.
+    - python: 3.7
+      env: TOXENV=py37
+    # Run python3.8 unit tests.
     - python: 3.8
       env: TOXENV=py38
 
