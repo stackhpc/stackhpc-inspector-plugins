@@ -26,9 +26,6 @@ LOG = utils.getProcessingLogger(__name__)
 
 CONF = cfg.CONF
 
-# Port physical_network field was introduced in API microversion 1.34.
-REQUIRED_IRONIC_VERSION = '1.34'
-
 
 @six.add_metaclass(abc.ABCMeta)
 class BasePhysnetHook(base.ProcessingHook):
@@ -69,8 +66,7 @@ class BasePhysnetHook(base.ProcessingHook):
         inventory = utils.get_inventory(introspection_data)
 
         LOG.info("Plugin: %s", type(self))
-        # Use a client with a version set explicitly.
-        client = ironic.get_client(api_version=REQUIRED_IRONIC_VERSION)
+        client = ironic.get_client()
 
         ironic_ports = node_info.ports()
         if (ironic_ports and
