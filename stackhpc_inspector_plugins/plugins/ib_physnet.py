@@ -16,7 +16,7 @@
 from ironic_inspector import utils
 from oslo_config import cfg
 
-from stackhpc_inspector_plugins.plugins import base_physnet
+from ironic_inspector.plugins import base_physnet
 
 LOG = utils.getProcessingLogger(__name__)
 
