@@ -17,7 +17,7 @@ from ironic_inspector.common import lldp_parsers
 from ironic_inspector import utils
 from oslo_config import cfg
 
-from stackhpc_inspector_plugins.plugins import base_physnet
+from ironic_inspector.plugins import base_physnet
 from stackhpc_inspector_plugins import utils as sip_utils
 
 LOG = utils.getProcessingLogger(__name__)
