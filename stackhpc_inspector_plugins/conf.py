@@ -15,22 +15,20 @@
 
 from oslo_config import cfg
 
-from ironic_inspector.common.i18n import _
-
 
 PORT_PHYSNET_OPTS = [
     cfg.StrOpt(
         'ib_physnet',
-        help=_('Name of the physical network that the Infiniband network is '
-               'on')),
+        help=('Name of the physical network that the Infiniband network is '
+              'on')),
     cfg.ListOpt(
         'switch_sys_name_mapping',
         default=[],
-        help=_('Comma-separated list of '
-               '<switch system name>:<physical network> tuples mapping switch '
-               'system names received via LLDP to a physical network to apply '
-               'to ports that are connected to a switch with a matching '
-               'system name.')),
+        help=('Comma-separated list of '
+              '<switch system name>:<physical network> tuples mapping switch '
+              'system names received via LLDP to a physical network to apply '
+              'to ports that are connected to a switch with a matching '
+              'system name.')),
 ]
 
 
