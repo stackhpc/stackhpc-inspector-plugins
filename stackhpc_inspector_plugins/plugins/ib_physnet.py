@@ -54,6 +54,9 @@ class IBPhysnetHook(base.InspectionHook):
 
         for interface in inventory['interfaces']:
             if interface['name'] not in plugin_data['all_interfaces']:
+                LOG.debug("No processed data for interface %s on node %s, "
+                          "skipping physical network processing.",
+                          interface['name'], task.node.uuid)
                 continue
 
             mac_address = interface['mac_address']
@@ -70,8 +73,7 @@ class IBPhysnetHook(base.InspectionHook):
             if phys_network is None:
                 LOG.debug("Skipping physical network processing for interface "
                           "%s on node %s - no physical network mapping.",
-                          mac_address,
-                          task.node.uuid)
+                          mac_address, task.node.uuid)
                 continue
 
             if getattr(port, 'physical_network', '') != phys_network:
@@ -135,18 +137,32 @@ class SystemNamePhysnetHook(IBPhysnetHook):
         :param introspection_data: Introspection data.
         :returns: The physical network to set, or None.
         """
-        # Check if LLDP data was already processed by lldp_basic plugin
-        # which stores data in 'all_interfaces'
-        iface_name = interface['name']
-        proc_data = plugin_data['all_interfaces'][iface_name]
-        if 'parsed_lldp' not in proc_data:
+        # Check if LLDP data was already processed
+        if 'parsed_lldp' not in plugin_data:
+            LOG.error("No LLDP data, parse_lldp hook is required. ")
             return
 
-        lldp_proc = proc_data['parsed_lldp']
+        # check we have data for this interface
+        iface_name = interface['name']
+        lldp_proc = plugin_data['parsed_lldp'].get(iface_name)
+        if not lldp_proc:
+            LOG.debug("No LLDP data for interface %s", iface_name)
+            return
 
         # Switch system name mapping.
         switch_sys_name = lldp_proc.get(lldp_parsers.LLDP_SYS_NAME_NM)
-        if switch_sys_name:
-            mapping = self._get_switch_sys_name_mapping()
-            if switch_sys_name in mapping:
-                return mapping[switch_sys_name]
+        if not switch_sys_name:
+            LOG.debug("No switch system name in LLDP data for interface %s",
+                      iface_name)
+            return
+
+        mapping = self._get_switch_sys_name_mapping()
+        if switch_sys_name not in mapping:
+            LOG.debug("No config set for switch system name %s for "
+                      "interface %s", switch_sys_name, iface_name)
+            return
+
+        LOG.debug("Interface %s connected to switch with system name "
+                  "%s, physnet %s", iface_name, switch_sys_name,
+                  mapping[switch_sys_name])
+        return mapping[switch_sys_name]
