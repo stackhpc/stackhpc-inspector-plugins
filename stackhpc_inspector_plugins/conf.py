@@ -31,11 +31,25 @@ PORT_PHYSNET_OPTS = [
               'system name.')),
 ]
 
+PORT_GROUP_OPTS = [
+    cfg.ListOpt(
+        'port_group_switches',
+        default=[],
+        help=('A list of switch names, where two ports are connected to '
+              'switches in this list, those ports will be added to a port '
+              'group.')),
+    cfg.StrOpt(
+        'port_group_mode',
+        default='active-backup',
+        help=('The port group mode to use when creating port groups.')),
+]
 
 cfg.CONF.register_opts(PORT_PHYSNET_OPTS, group='port_physnet')
+cfg.CONF.register_opts(PORT_GROUP_OPTS, group='port_group')
 
 
 def list_opts():
     return [
         ('port_physnet', PORT_PHYSNET_OPTS),
+        ('port_group', PORT_GROUP_OPTS),
     ]
