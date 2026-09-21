@@ -13,63 +13,180 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import mock
+from unittest import mock
 
-from ironic_inspector import node_cache
-from ironic_inspector.test import base as test_base
-from oslo_config import cfg
+from ironic.conductor import task_manager
+from ironic import objects
+from ironic.tests.unit.db import base as db_base
+from ironic.tests.unit.objects import utils as obj_utils
+from ironic.conf import CONF
+import testtools
 
 from stackhpc_inspector_plugins.plugins import ib_physnet
 
 
-class TestIBPhysnetHook(test_base.NodeTest):
+_INTERFACE_1 = {
+    'name': 'em0',
+    'mac_address': '11:11:11:11:11:11',
+    'ipv4_address': '192.168.10.1',
+    'ipv6_address': '2001:db8::1',
+}
 
+_INTERFACE_2 = {
+    'name': 'em1',
+    'mac_address': '22:22:22:22:22:22',
+    'ipv4_address': '192.168.12.2',
+    'ipv6_address': 'fe80:5054::',
+    'client_id': ('ff:00:00:00:00:00:02:00:00:02:c9:00:7c:fe:'
+                  '90:03:00:3a:4b:0a'),
+}
+
+_INTERFACE_3 = {
+    'name': 'em2',
+    'mac_address': '33:33:33:33:33:33',
+    'ipv4_address': '192.168.12.3',
+    'ipv6_address': 'fe80::5054:ff:fea7:87:6482',
+}
+
+_INVENTORY = {
+    'interfaces': [_INTERFACE_1, _INTERFACE_2, _INTERFACE_3]
+}
+
+_PLUGIN_DATA = {
+    'all_interfaces': {'em0': _INTERFACE_1, 'em1': _INTERFACE_2},
+    'parsed_lldp': {'em1': {'switch_system_name': 'switch-1'}},
+}
+
+
+class TestIBPhysnetHook(db_base.DbTestCase):
     def setUp(self):
-        super(TestIBPhysnetHook, self).setUp()
-        self.hook = ib_physnet.IBPhysnetHook()
-        self.data = {
-            'inventory': {
-                'interfaces': [{
-                    'name': 'em1', 'mac_address': '11:11:11:11:11:11',
-                    'ipv4_address': '1.1.1.1',
-                }],
-                'cpu': 1,
-                'disks': 1,
-                'memory': 1
-            },
-            'all_interfaces': {
-                'em1': {
-                    'client_id': ('ff:00:00:00:00:00:02:00:00:02:c9:00:7c:fe:'
-                                  '90:03:00:3a:4b:0a'),
-                },
-            }
-        }
+        super().setUp()
+        CONF.set_override('enabled_inspect_interfaces',
+                          ['agent', 'no-inspect'])
+        self.node = obj_utils.create_test_node(self.context,
+                                               inspect_interface='agent')
+        self.inventory = _INVENTORY
+        self.plugin_data = _PLUGIN_DATA
 
-        ports = [mock.Mock(spec=['address', 'uuid', 'physical_network'],
-                           address=a, physical_network='physnet1')
-                 for a in ('11:11:11:11:11:11',)]
-        self.node_info = node_cache.NodeInfo(uuid=self.uuid, started_at=0,
-                                             node=self.node, ports=ports)
+    @mock.patch.object(objects.Port, 'list_by_node_id', autospec=True)
+    def test_physical_network(self, mock_list_by_nodeid):
+        CONF.set_override('ib_physnet', 'ibphysnet',
+                          group='port_physnet')
+        with task_manager.acquire(self.context, self.node.id) as task:
+            port1 = obj_utils.create_test_port(self.context,
+                                               address='11:11:11:11:11:11',
+                                               node_id=self.node.id)
+            port2 = obj_utils.create_test_port(
+                self.context, id=988,
+                uuid='2be26c0b-03f2-4d2e-ae87-c02d7f33c781',
+                address='22:22:22:22:22:22', node_id=self.node.id)
+            ports = [port1, port2]
 
-    def test_expected_data_ib(self):
-        cfg.CONF.set_override('ib_physnet', 'physnet1',
-                              group='port_physnet')
-        port = list(self.node_info.ports().values())[0]
-        physnet = self.hook.get_physnet(port, 'em1', self.data)
-        self.assertEqual(physnet, 'physnet1')
+            mock_list_by_nodeid.return_value = ports
 
-    def test_expected_data_client_id_is_none(self):
-        cfg.CONF.set_override('ib_physnet', 'physnet1',
-                              group='port_physnet')
-        self.data['all_interfaces']['em1']['client_id'] = None
-        port = list(self.node_info.ports().values())[0]
-        physnet = self.hook.get_physnet(port, 'em1', self.data)
-        self.assertIsNone(physnet)
+            ib_physnet.IBPhysnetHook().__call__(
+                task, self.inventory, self.plugin_data)
 
-    def test_expected_data_no_client_id(self):
-        cfg.CONF.set_override('ib_physnet', 'physnet1',
-                              group='port_physnet')
-        del self.data['all_interfaces']['em1']['client_id']
-        port = list(self.node_info.ports().values())[0]
-        physnet = self.hook.get_physnet(port, 'em1', self.data)
-        self.assertIsNone(physnet)
+            port1.refresh()
+            port2.refresh()
+            self.assertEqual(port2.physical_network, 'ibphysnet')
+            self.assertIsNone(port1.physical_network)
+
+
+class TestSystemNamePhysnetHook(db_base.DbTestCase):
+    def setUp(self):
+        super().setUp()
+        CONF.set_override('enabled_inspect_interfaces',
+                          ['agent', 'no-inspect'])
+        self.node = obj_utils.create_test_node(self.context,
+                                               inspect_interface='agent')
+        self.inventory = _INVENTORY
+        self.plugin_data = _PLUGIN_DATA
+
+    @mock.patch.object(objects.Port, 'list_by_node_id', autospec=True)
+    def test_sys_name_success(self, mock_list_by_nodeid):
+        sys_name_mapping = 'switch-1:ibphysnet,switch-2:physnet2'
+        CONF.set_override('switch_sys_name_mapping', sys_name_mapping,
+                          group='port_physnet')
+        with task_manager.acquire(self.context, self.node.id) as task:
+            port1 = obj_utils.create_test_port(self.context,
+                                               address='11:11:11:11:11:11',
+                                               node_id=self.node.id)
+            port2 = obj_utils.create_test_port(
+                self.context, id=988,
+                uuid='2be26c0b-03f2-4d2e-ae87-c02d7f33c781',
+                address='22:22:22:22:22:22', node_id=self.node.id)
+            ports = [port1, port2]
+
+            mock_list_by_nodeid.return_value = ports
+
+            ib_physnet.SystemNamePhysnetHook().__call__(
+                task, self.inventory, self.plugin_data)
+
+            port1.refresh()
+            port2.refresh()
+            self.assertEqual(port2.physical_network, 'ibphysnet')
+            self.assertIsNone(port1.physical_network)
+
+    @mock.patch.object(objects.Port, 'list_by_node_id', autospec=True)
+    def test_sys_name_success_no_data(self, mock_list_by_nodeid):
+        sys_name_mapping = 'switch-1:ibphysnet,switch-2:physnet2'
+        CONF.set_override('switch_sys_name_mapping', sys_name_mapping,
+                          group='port_physnet')
+        del _PLUGIN_DATA['parsed_lldp']
+        with task_manager.acquire(self.context, self.node.id) as task:
+            port1 = obj_utils.create_test_port(self.context,
+                                               address='11:11:11:11:11:11',
+                                               node_id=self.node.id)
+            port2 = obj_utils.create_test_port(
+                self.context, id=988,
+                uuid='2be26c0b-03f2-4d2e-ae87-c02d7f33c781',
+                address='22:22:22:22:22:22', node_id=self.node.id)
+            ports = [port1, port2]
+
+            mock_list_by_nodeid.return_value = ports
+
+            ib_physnet.SystemNamePhysnetHook().__call__(
+                task, self.inventory, self.plugin_data)
+
+            port1.refresh()
+            port2.refresh()
+            self.assertIsNone(port2.physical_network)
+            self.assertIsNone(port1.physical_network)
+
+    def parse(self, mapping_list):
+        return ib_physnet.parse_mappings(mapping_list)
+
+    def test_parse_mappings_fails_for_missing_separator(self):
+        with testtools.ExpectedException(ValueError):
+            self.parse(['key'])
+
+    def test_parse_mappings_fails_for_missing_key(self):
+        with testtools.ExpectedException(ValueError):
+            self.parse([':val'])
+
+    def test_parse_mappings_fails_for_missing_value(self):
+        with testtools.ExpectedException(ValueError):
+            self.parse(['key:'])
+
+    def test_parse_mappings_fails_for_extra_separator(self):
+        with testtools.ExpectedException(ValueError):
+            self.parse(['key:val:junk'])
+
+    def test_parse_mappings_fails_for_duplicate_key(self):
+        with testtools.ExpectedException(ValueError):
+            self.parse(['key:val1', 'key:val2'])
+
+    def test_parse_mappings_succeeds_for_one_mapping(self):
+        self.assertEqual({'key': 'val'}, self.parse(['key:val']))
+
+    def test_parse_mappings_succeeds_for_n_mappings(self):
+        self.assertEqual({'key1': 'val1', 'key2': 'val2'},
+                         self.parse(['key1:val1', 'key2:val2']))
+
+    def test_parse_mappings_succeeds_for_duplicate_value(self):
+        self.assertEqual({'key1': 'val', 'key2': 'val'},
+                         self.parse(['key1:val', 'key2:val']))
+
+    def test_parse_mappings_succeeds_for_no_mappings(self):
+        self.assertEqual({}, self.parse(['']))
